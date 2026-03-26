@@ -441,7 +441,7 @@ document.addEventListener('keydown', (e) => {
 // ===== API Base URL =====
 // When served via api_server.py (port 8000), use same origin.
 // When served via npx serve (port 3000), point to API server.
-const API_BASE = window.location.port === '8000' ? '' : 'http://localhost:8000';
+const API_BASE = '';
 
 // ===== Chart Drawing =====
 let chartPrices = [];
