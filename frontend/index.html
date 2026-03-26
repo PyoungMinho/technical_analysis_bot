@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>US Quant Trading Bot</title>
+  <link rel="stylesheet" href="styles.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+  <!-- Header -->
+  <header class="header">
+    <div class="header-left">
+      <div class="logo">
+        <span class="logo-icon">⚡</span>
+        <h1>US Quant Bot</h1>
+      </div>
+      <span class="version-badge">v1.0</span>
+    </div>
+    <div class="header-center">
+      <div class="search-box">
+        <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+        <input type="text" id="tickerInput" placeholder="종목 코드 입력 (예: AAPL, TSLA, MSFT)" spellcheck="false">
+        <button id="analyzeBtn" class="btn-analyze">
+          <span>분석</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="market-status" id="marketStatus">
+        <span class="status-dot"></span>
+        <span>Market Closed</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="dashboard">
+    <!-- Top Stats Row -->
+    <section class="top-stats" id="topStats">
+      <div class="stat-card price-card">
+        <div class="stat-header">
+          <span class="stat-label">현재가</span>
+          <span class="ticker-name" id="tickerName">AAPL</span>
+        </div>
+        <div class="stat-value" id="currentPrice">$189.84</div>
+        <div class="stat-change positive" id="priceChange">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 4l-8 8h5v8h6v-8h5z"/></svg>
+          <span>+2.34 (+1.25%)</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-header">
+          <span class="stat-label">52주 최고</span>
+        </div>
+        <div class="stat-value" id="high52w">$199.62</div>
+        <div class="stat-sub">from ATH: -4.9%</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-header">
+          <span class="stat-label">52주 최저</span>
+        </div>
+        <div class="stat-value" id="low52w">$143.90</div>
+        <div class="stat-sub">from Low: +31.9%</div>
+      </div>
+      <div class="stat-card signal-card" id="signalCard">
+        <div class="stat-header">
+          <span class="stat-label">종합 시그널</span>
+        </div>
+        <div class="signal-badge buy" id="signalBadge">
+          <span class="signal-icon">▲</span>
+          <span>BUY</span>
+        </div>
+        <div class="stat-sub">Trend Score: <strong id="trendScore">78</strong>/100</div>
+      </div>
+    </section>
+
+    <!-- Two Column Layout -->
+    <div class="grid-2col">
+      <!-- Left Column -->
+      <div class="left-col">
+        <!-- Chart Placeholder -->
+        <section class="card chart-card">
+          <div class="card-header">
+            <h2>📈 가격 차트</h2>
+            <div class="chart-timeframes">
+              <button class="tf-btn active">1M</button>
+              <button class="tf-btn">3M</button>
+              <button class="tf-btn">6M</button>
+              <button class="tf-btn">1Y</button>
+            </div>
+          </div>
+          <div class="chart-container" id="chartContainer">
+            <canvas id="priceChart"></canvas>
+          </div>
+        </section>
+
+        <!-- Core Indicators -->
+        <section class="card">
+          <div class="card-header">
+            <h2>🎯 핵심 지표 (Core)</h2>
+            <span class="card-badge">3 Factors</span>
+          </div>
+          <div class="indicators-grid">
+            <!-- SMA -->
+            <div class="indicator-item">
+              <div class="indicator-top">
+                <div class="indicator-label">
+                  <span class="indicator-name">SMA (이동평균선)</span>
+                  <button class="info-btn" data-indicator="sma">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+                  </button>
+                </div>
+                <span class="indicator-signal buy" id="smaSignal">Golden Cross ✅</span>
+              </div>
+              <div class="indicator-values">
+                <div class="ind-val">
+                  <span class="ind-val-label">SMA 50</span>
+                  <span class="ind-val-num" id="sma50">$182.45</span>
+                </div>
+                <div class="ind-val">
+                  <span class="ind-val-label">SMA 200</span>
+                  <span class="ind-val-num" id="sma200">$175.30</span>
+                </div>
+              </div>
+              <div class="indicator-bar">
+                <div class="bar-fill buy" style="width: 75%"></div>
+              </div>
+            </div>
+
+            <!-- RSI -->
+            <div class="indicator-item">
+              <div class="indicator-top">
+                <div class="indicator-label">
+                  <span class="indicator-name">RSI (상대강도지수)</span>
+                  <button class="info-btn" data-indicator="rsi">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+                  </button>
+                </div>
+                <span class="indicator-signal neutral" id="rsiSignal">중립 (58.3)</span>
+              </div>
+              <div class="rsi-gauge">
+                <div class="rsi-bar">
+                  <div class="rsi-zone oversold"></div>
+                  <div class="rsi-zone neutral-zone"></div>
+                  <div class="rsi-zone overbought"></div>
+                  <div class="rsi-pointer" id="rsiPointer" style="left: 58.3%"></div>
+                </div>
+                <div class="rsi-labels">
+                  <span>0</span>
+                  <span class="rsi-label-os">30 과매도</span>
+                  <span class="rsi-label-ob">70 과매수</span>
+                  <span>100</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Volume Oscillator -->
+            <div class="indicator-item">
+              <div class="indicator-top">
+                <div class="indicator-label">
+                  <span class="indicator-name">Volume Oscillator (거래량)</span>
+                  <button class="info-btn" data-indicator="vol_osc">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+                  </button>
+                </div>
+                <span class="indicator-signal buy" id="volSignal">양수 (+12.4%) ✅</span>
+              </div>
+              <div class="indicator-values">
+                <div class="ind-val">
+                  <span class="ind-val-label">Fast Vol (5)</span>
+                  <span class="ind-val-num" id="volFast">48.2M</span>
+                </div>
+                <div class="ind-val">
+                  <span class="ind-val-label">Slow Vol (20)</span>
+                  <span class="ind-val-num" id="volSlow">42.9M</span>
+                </div>
+              </div>
+              <div class="indicator-bar">
+                <div class="bar-fill buy" style="width: 62%"></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Extended Indicators -->
+        <section class="card">
+          <div class="card-header">
+            <h2>📊 확장 지표 (Extended)</h2>
+            <span class="card-badge">3 Factors</span>
+          </div>
+          <div class="indicators-grid">
+            <!-- MACD -->
+            <div class="indicator-item">
+              <div class="indicator-top">
+                <div class="indicator-label">
+                  <span class="indicator-name">MACD</span>
+                  <button class="info-btn" data-indicator="macd">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+                  </button>
+                </div>
+                <span class="indicator-signal buy" id="macdSignal">Bullish ✅</span>
+              </div>
+              <div class="indicator-values">
+                <div class="ind-val">
+                  <span class="ind-val-label">MACD</span>
+                  <span class="ind-val-num" id="macdLine">2.34</span>
+                </div>
+                <div class="ind-val">
+                  <span class="ind-val-label">Signal</span>
+                  <span class="ind-val-num" id="macdSignalLine">1.89</span>
+                </div>
+                <div class="ind-val">
+                  <span class="ind-val-label">Histogram</span>
+                  <span class="ind-val-num positive" id="macdHist">+0.45</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Bollinger Bands -->
+            <div class="indicator-item">
+              <div class="indicator-top">
+                <div class="indicator-label">
+                  <span class="indicator-name">Bollinger Bands (볼린저 밴드)</span>
+                  <button class="info-btn" data-indicator="bb">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+                  </button>
+                </div>
+                <span class="indicator-signal buy" id="bbSignal">밴드 내 (72%) ✅</span>
+              </div>
+              <div class="bb-visual">
+                <div class="bb-band">
+                  <div class="bb-upper">Upper: <span id="bbUpper">$195.20</span></div>
+                  <div class="bb-price-marker" id="bbMarker" style="bottom: 72%"></div>
+                  <div class="bb-middle">Mid: <span id="bbMiddle">$186.50</span></div>
+                  <div class="bb-lower">Lower: <span id="bbLower">$177.80</span></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Stochastic -->
+            <div class="indicator-item">
+              <div class="indicator-top">
+                <div class="indicator-label">
+                  <span class="indicator-name">Stochastic (스토캐스틱)</span>
+                  <button class="info-btn" data-indicator="stoch">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+                  </button>
+                </div>
+                <span class="indicator-signal buy" id="stochSignal">매수 적합 ✅</span>
+              </div>
+              <div class="indicator-values">
+                <div class="ind-val">
+                  <span class="ind-val-label">%K</span>
+                  <span class="ind-val-num" id="stochK">65.4</span>
+                </div>
+                <div class="ind-val">
+                  <span class="ind-val-label">%D</span>
+                  <span class="ind-val-num" id="stochD">61.2</span>
+                </div>
+              </div>
+              <div class="stoch-gauge">
+                <div class="rsi-bar">
+                  <div class="rsi-zone oversold"></div>
+                  <div class="rsi-zone neutral-zone"></div>
+                  <div class="rsi-zone overbought"></div>
+                  <div class="rsi-pointer" id="stochPointer" style="left: 65.4%"></div>
+                </div>
+                <div class="rsi-labels">
+                  <span>0</span>
+                  <span class="rsi-label-os">20</span>
+                  <span class="rsi-label-ob">80</span>
+                  <span>100</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+        <!-- Sentiment Analysis -->
+        <section class="card">
+          <div class="card-header">
+            <h2>🧠 AI 감성 분석</h2>
+            <button class="info-btn" data-indicator="sentiment">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+            </button>
+          </div>
+          <div class="sentiment-content sentiment-horizontal">
+            <div class="sentiment-score-wrap">
+              <div class="sentiment-ring" id="sentimentRing">
+                <svg viewBox="0 0 120 120">
+                  <circle cx="60" cy="60" r="52" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="8"/>
+                  <circle cx="60" cy="60" r="52" fill="none" stroke="var(--accent-green)" stroke-width="8" stroke-dasharray="326.73" stroke-dashoffset="108" stroke-linecap="round" transform="rotate(-90 60 60)" id="sentimentArc"/>
+                </svg>
+                <div class="sentiment-score-text">
+                  <div class="sentiment-num" id="sentimentScore">+0.67</div>
+                  <div class="sentiment-label">Bullish</div>
+                </div>
+              </div>
+            </div>
+            <div class="news-list" id="newsList">
+              <div class="news-item">
+                <div class="news-sentiment positive">+0.8</div>
+                <div class="news-text">
+                  <div class="news-title">Apple reports record Q4 earnings</div>
+                  <div class="news-meta">Reuters • 2h ago</div>
+                </div>
+              </div>
+              <div class="news-item">
+                <div class="news-sentiment positive">+0.6</div>
+                <div class="news-text">
+                  <div class="news-title">iPhone 16 sales exceed expectations</div>
+                  <div class="news-meta">Bloomberg • 5h ago</div>
+                </div>
+              </div>
+              <div class="news-item">
+                <div class="news-sentiment neutral-sent">+0.2</div>
+                <div class="news-text">
+                  <div class="news-title">Tech sector faces regulation review</div>
+                  <div class="news-meta">CNBC • 8h ago</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <!-- Right Column -->
+      <div class="right-col">
+        <!-- Market Regime -->
+        <section class="card">
+          <div class="card-header">
+            <h2>🌍 시장 레짐</h2>
+            <button class="info-btn" data-indicator="regime">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+            </button>
+          </div>
+          <div class="regime-content">
+            <div class="regime-box normal" id="regimeBox">
+              <span class="regime-emoji">🟢</span>
+              <div>
+                <div class="regime-name" id="regimeName">NORMAL</div>
+                <div class="regime-desc">VIX 15~25 구간, 정상적 변동성</div>
+              </div>
+            </div>
+            <div class="regime-details">
+              <div class="regime-detail">
+                <span class="detail-label">VIX</span>
+                <span class="detail-value" id="vixValue">18.42</span>
+              </div>
+              <div class="regime-detail">
+                <span class="detail-label">SPY 트렌드</span>
+                <span class="detail-value positive" id="spyTrend">BULL 🐂</span>
+              </div>
+              <div class="regime-detail">
+                <span class="detail-label">SPY SMA50</span>
+                <span class="detail-value" id="spySma50">$542.30</span>
+              </div>
+              <div class="regime-detail">
+                <span class="detail-label">SPY SMA200</span>
+                <span class="detail-value" id="spySma200">$518.75</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Advanced Indicators -->
+        <section class="card">
+          <div class="card-header">
+            <h2>🔬 고급 지표 (Advanced)</h2>
+            <span class="card-badge">3 Factors</span>
+          </div>
+          <div class="indicators-grid compact">
+            <!-- ADX -->
+            <div class="indicator-item">
+              <div class="indicator-top">
+                <div class="indicator-label">
+                  <span class="indicator-name">ADX (추세강도)</span>
+                  <button class="info-btn" data-indicator="adx">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+                  </button>
+                </div>
+                <span class="indicator-signal buy" id="adxSignal">강한 추세 ✅</span>
+              </div>
+              <div class="adx-visual">
+                <div class="adx-value" id="adxValue">32.5</div>
+                <div class="adx-meter">
+                  <div class="adx-fill" id="adxFill" style="width: 32.5%"></div>
+                  <div class="adx-threshold"></div>
+                </div>
+                <div class="adx-labels">
+                  <span>약한 추세</span>
+                  <span class="adx-25">25</span>
+                  <span>강한 추세</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- MFI -->
+            <div class="indicator-item">
+              <div class="indicator-top">
+                <div class="indicator-label">
+                  <span class="indicator-name">MFI (자금흐름지수)</span>
+                  <button class="info-btn" data-indicator="mfi">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+                  </button>
+                </div>
+                <span class="indicator-signal buy" id="mfiSignal">정상 (62.1) ✅</span>
+              </div>
+              <div class="rsi-gauge">
+                <div class="rsi-bar">
+                  <div class="rsi-zone oversold"></div>
+                  <div class="rsi-zone neutral-zone"></div>
+                  <div class="rsi-zone overbought"></div>
+                  <div class="rsi-pointer" id="mfiPointer" style="left: 62.1%"></div>
+                </div>
+                <div class="rsi-labels">
+                  <span>0</span>
+                  <span class="rsi-label-os">20 과매도</span>
+                  <span class="rsi-label-ob">80 과매수</span>
+                  <span>100</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- OBV -->
+            <div class="indicator-item">
+              <div class="indicator-top">
+                <div class="indicator-label">
+                  <span class="indicator-name">OBV (거래량 균형)</span>
+                  <button class="info-btn" data-indicator="obv">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+                  </button>
+                </div>
+                <span class="indicator-signal buy" id="obvSignal">상승 추세 ✅</span>
+              </div>
+              <div class="indicator-values">
+                <div class="ind-val">
+                  <span class="ind-val-label">OBV</span>
+                  <span class="ind-val-num" id="obvValue">1.24B</span>
+                </div>
+                <div class="ind-val">
+                  <span class="ind-val-label">OBV SMA5</span>
+                  <span class="ind-val-num" id="obvSma">1.18B</span>
+                </div>
+              </div>
+              <div class="indicator-bar">
+                <div class="bar-fill buy" style="width: 68%"></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Risk Management -->
+        <section class="card">
+          <div class="card-header">
+            <h2>🛡️ 리스크 관리</h2>
+            <button class="info-btn" data-indicator="risk">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+            </button>
+          </div>
+          <div class="risk-content">
+            <div class="risk-levels">
+              <div class="risk-level tp">
+                <span class="risk-label">Take Profit</span>
+                <span class="risk-price" id="tpPrice">$201.64</span>
+                <span class="risk-pct positive">+6.2%</span>
+              </div>
+              <div class="risk-level current">
+                <span class="risk-label">현재가</span>
+                <span class="risk-price" id="riskCurrentPrice">$189.84</span>
+              </div>
+              <div class="risk-level sl">
+                <span class="risk-label">Stop Loss</span>
+                <span class="risk-price" id="slPrice">$183.94</span>
+                <span class="risk-pct negative">-3.1%</span>
+              </div>
+            </div>
+            <div class="risk-details">
+              <div class="risk-detail">
+                <span class="detail-label">ATR (14)</span>
+                <span class="detail-value" id="atrValue">$2.95</span>
+                <button class="info-btn" data-indicator="atr">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+                </button>
+              </div>
+              <div class="risk-detail">
+                <span class="detail-label">Risk/Reward</span>
+                <span class="detail-value positive" id="rrRatio">1:2.0</span>
+              </div>
+              <div class="risk-detail">
+                <span class="detail-label">Kelly %</span>
+                <span class="detail-value" id="kellyPct">12.5%</span>
+                <button class="info-btn" data-indicator="kelly">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Fibonacci Levels -->
+        <section class="card">
+          <div class="card-header">
+            <h2>📐 피보나치 되돌림</h2>
+            <button class="info-btn" data-indicator="fib">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+            </button>
+          </div>
+          <div class="fib-content">
+            <div class="fib-levels">
+              <div class="fib-level">
+                <span class="fib-pct">0.0%</span>
+                <div class="fib-bar-wrap"><div class="fib-bar" style="width: 100%"></div></div>
+                <span class="fib-price" id="fib0">$199.62</span>
+              </div>
+              <div class="fib-level">
+                <span class="fib-pct">23.6%</span>
+                <div class="fib-bar-wrap"><div class="fib-bar" style="width: 76.4%"></div></div>
+                <span class="fib-price" id="fib236">$186.47</span>
+              </div>
+              <div class="fib-level active">
+                <span class="fib-pct">38.2%</span>
+                <div class="fib-bar-wrap"><div class="fib-bar" style="width: 61.8%"></div></div>
+                <span class="fib-price" id="fib382">$178.35</span>
+              </div>
+              <div class="fib-level">
+                <span class="fib-pct">50.0%</span>
+                <div class="fib-bar-wrap"><div class="fib-bar" style="width: 50%"></div></div>
+                <span class="fib-price" id="fib50">$171.76</span>
+              </div>
+              <div class="fib-level">
+                <span class="fib-pct">61.8%</span>
+                <div class="fib-bar-wrap"><div class="fib-bar" style="width: 38.2%"></div></div>
+                <span class="fib-price" id="fib618">$165.17</span>
+              </div>
+              <div class="fib-level">
+                <span class="fib-pct">78.6%</span>
+                <div class="fib-bar-wrap"><div class="fib-bar" style="width: 21.4%"></div></div>
+                <span class="fib-price" id="fib786">$155.87</span>
+              </div>
+              <div class="fib-level">
+                <span class="fib-pct">100%</span>
+                <div class="fib-bar-wrap"><div class="fib-bar" style="width: 0%"></div></div>
+                <span class="fib-price" id="fib100">$143.90</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Relative Strength -->
+        <section class="card">
+          <div class="card-header">
+            <h2>💪 상대강도 (vs SPY)</h2>
+            <button class="info-btn" data-indicator="rs">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+            </button>
+          </div>
+          <div class="rs-content">
+            <div class="rs-comparison">
+              <div class="rs-item">
+                <span class="rs-period">1개월</span>
+                <div class="rs-bars">
+                  <div class="rs-bar-row">
+                    <span class="rs-ticker" id="rsTicker1m">AAPL</span>
+                    <div class="rs-bar-wrap"><div class="rs-bar positive" id="rsTickerBar1m" style="width: 65%"></div></div>
+                    <span class="rs-pct positive" id="rsTickerPct1m">+5.2%</span>
+                  </div>
+                  <div class="rs-bar-row">
+                    <span class="rs-ticker">SPY</span>
+                    <div class="rs-bar-wrap"><div class="rs-bar spy" id="rsSpyBar1m" style="width: 45%"></div></div>
+                    <span class="rs-pct" id="rsSpyPct1m">+3.1%</span>
+                  </div>
+                </div>
+              </div>
+              <div class="rs-item">
+                <span class="rs-period">3개월</span>
+                <div class="rs-bars">
+                  <div class="rs-bar-row">
+                    <span class="rs-ticker" id="rsTicker3m">AAPL</span>
+                    <div class="rs-bar-wrap"><div class="rs-bar positive" id="rsTickerBar3m" style="width: 80%"></div></div>
+                    <span class="rs-pct positive" id="rsTickerPct3m">+12.4%</span>
+                  </div>
+                  <div class="rs-bar-row">
+                    <span class="rs-ticker">SPY</span>
+                    <div class="rs-bar-wrap"><div class="rs-bar spy" id="rsSpyBar3m" style="width: 55%"></div></div>
+                    <span class="rs-pct" id="rsSpyPct3m">+7.8%</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="rs-verdict positive" id="rsVerdict">
+              ✅ SPY 대비 아웃퍼폼 중
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <!-- Signal Summary -->
+    <section class="card signal-summary-card">
+      <div class="card-header">
+        <h2>📋 시그널 종합</h2>
+      </div>
+      <div class="signal-summary">
+        <div class="signal-group">
+          <h3>Core (3)</h3>
+          <div class="signal-checks">
+            <div class="signal-check buy" id="sumSma"><span class="check-icon">✅</span> SMA Golden Cross</div>
+            <div class="signal-check buy" id="sumRsi"><span class="check-icon">✅</span> RSI 정상 범위</div>
+            <div class="signal-check buy" id="sumVol"><span class="check-icon">✅</span> 거래량 확인</div>
+          </div>
+        </div>
+        <div class="signal-group">
+          <h3>Extended (3)</h3>
+          <div class="signal-checks">
+            <div class="signal-check buy" id="sumMacd"><span class="check-icon">✅</span> MACD Bullish</div>
+            <div class="signal-check buy" id="sumBb"><span class="check-icon">✅</span> 볼린저 밴드 내</div>
+            <div class="signal-check buy" id="sumStoch"><span class="check-icon">✅</span> 스토캐스틱 적합</div>
+          </div>
+        </div>
+        <div class="signal-group">
+          <h3>Advanced (3)</h3>
+          <div class="signal-checks">
+            <div class="signal-check buy" id="sumAdx"><span class="check-icon">✅</span> ADX 강한 추세</div>
+            <div class="signal-check buy" id="sumMfi"><span class="check-icon">✅</span> MFI 정상</div>
+            <div class="signal-check buy" id="sumObv"><span class="check-icon">✅</span> OBV 상승</div>
+          </div>
+        </div>
+        <div class="signal-group">
+          <h3>기타</h3>
+          <div class="signal-checks">
+            <div class="signal-check buy" id="sumSentiment"><span class="check-icon">✅</span> 감성 긍정적</div>
+            <div class="signal-check buy" id="sumRegime"><span class="check-icon">✅</span> 시장 레짐 정상</div>
+            <div class="signal-check buy" id="sumRs"><span class="check-icon">✅</span> 상대강도 우위</div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Info Modal -->
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal" id="infoModal">
+      <div class="modal-header">
+        <h3 id="modalTitle">지표 설명</h3>
+        <button class="modal-close" id="modalClose">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div class="modal-body" id="modalBody"></div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
